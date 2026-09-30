@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Splitwise Lite</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Splitwise <span>Lite</span></h1>
+    <button id="reset" class="link-btn" type="button">Reset all</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>People</h2>
+      <form id="person-form" class="row">
+        <input id="person-name" type="text" placeholder="Name" autocomplete="off" maxlength="40" required>
+        <button type="submit">Add</button>
+      </form>
+      <ul id="people" class="chips"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Add an expense</h2>
+      <form id="expense-form">
+        <div class="row">
+          <input id="desc" type="text" placeholder="What for?" autocomplete="off" maxlength="60" required>
+          <input id="amount" type="number" placeholder="0.00" step="0.01" min="0.01" required>
+        </div>
+        <div class="row">
+          <label class="field">
+            <span>Paid by</span>
+            <select id="payer" required></select>
+          </label>
+        </div>
+        <fieldset class="split">
+          <legend>Split equally between</legend>
+          <div id="participants" class="checks"></div>
+          <button id="toggle-all" class="link-btn" type="button">Select all</button>
+        </fieldset>
+        <button type="submit" class="primary">Add expense</button>
+        <p id="expense-error" class="error" hidden></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Expenses</h2>
+      <ul id="expenses" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Balances</h2>
+      <ul id="balances" class="list"></ul>
+      <h3>Settle up</h3>
+      <ul id="settlements" class="list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
