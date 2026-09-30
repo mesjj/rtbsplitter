@@ -6,9 +6,9 @@
 set -euo pipefail
 
 DOMAIN="${DOMAIN:-}"
-APP_DIR=/opt/splitwise
-DATA_DIR=/var/lib/splitwise
-BACKUP_DIR=/var/backups/splitwise
+APP_DIR=/opt/rtbsplitter
+DATA_DIR=/var/lib/rtbsplitter
+BACKUP_DIR=/var/backups/rtbsplitter
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -31,27 +31,27 @@ if ! command -v caddy >/dev/null; then
 fi
 
 echo "==> App user and folders"
-id splitwise >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin splitwise
+id rtbsplitter >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin rtbsplitter
 mkdir -p "$APP_DIR" "$DATA_DIR" "$BACKUP_DIR"
-chown splitwise:splitwise "$DATA_DIR"
+chown rtbsplitter:rtbsplitter "$DATA_DIR"
 chmod 700 "$DATA_DIR" "$BACKUP_DIR"
 
 echo "==> systemd service"
 SECURE=0; [ -n "$DOMAIN" ] && SECURE=1
-cat > /etc/systemd/system/splitwise.service <<EOF
+cat > /etc/systemd/system/rtbsplitter.service <<EOF
 [Unit]
-Description=Splitwise Lite
+Description=RTBSplitter
 After=network.target
 
 [Service]
-User=splitwise
-Group=splitwise
+User=rtbsplitter
+Group=rtbsplitter
 WorkingDirectory=$APP_DIR
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning $APP_DIR/server.js
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
-Environment=DB_FILE=$DATA_DIR/splitwise.db
+Environment=DB_FILE=$DATA_DIR/rtbsplitter.db
 Environment=TRUST_PROXY=1
 Environment=SECURE_COOKIES=$SECURE
 Restart=always
@@ -67,7 +67,7 @@ ReadWritePaths=$DATA_DIR
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable splitwise >/dev/null 2>&1
+systemctl enable rtbsplitter >/dev/null 2>&1
 
 echo "==> Caddy (reverse proxy${DOMAIN:+ + HTTPS for $DOMAIN})"
 SITE="${DOMAIN:-:80}"
@@ -93,8 +93,8 @@ ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
 
 echo "==> Nightly backups (03:15, keep 14 days)"
-cat > /etc/cron.d/splitwise-backup <<EOF
-15 3 * * * root sqlite3 $DATA_DIR/splitwise.db ".backup $BACKUP_DIR/splitwise-\$(date +\%F).db" && find $BACKUP_DIR -name 'splitwise-*.db' -mtime +14 -delete
+cat > /etc/cron.d/rtbsplitter-backup <<EOF
+15 3 * * * root sqlite3 $DATA_DIR/rtbsplitter.db ".backup $BACKUP_DIR/rtbsplitter-\$(date +\%F).db" && find $BACKUP_DIR -name 'rtbsplitter-*.db' -mtime +14 -delete
 EOF
 
 echo "==> Done. Node $(node -v), $(caddy version | cut -d' ' -f1)"

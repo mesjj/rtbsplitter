@@ -1,103 +1,186 @@
-# Splitwise Lite
+# RTBSplitter
 
-A small self-hosted Splitwise clone: shared expenses, flexible splits, automatic "who pays whom".
+**Split bills with your friends, without the ads.** RTBSplitter is a small, self-hosted bill-splitting app. You run your own copy for free on Cloudflare, and your group uses it from a browser or right inside Telegram.
 
-No runtime dependencies. It needs Node **22.13+** and uses the built-in `node:sqlite`. (`wrangler` is a dev dependency, only needed for Cloudflare.)
+<p align="center">
+  <img src="docs/group-overview.png" alt="A group's overview: balances, who owes whom and suggested payments" width="720">
+</p>
 
-## Run it
+<p align="center">
+  <img src="docs/split-form.png" alt="Adding an expense split by exact amounts, with a button that assigns the remainder" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/phone-home.png" alt="The home screen on a phone" width="300">
+</p>
+
+## What it does
+
+- **Groups:** as many as you like (a flat, a trip, a couple), each with its own members and currency. Archive them when settled, or delete them.
+- **Expenses:** split equally, by exact amounts, by percentages or by shares. The form shows each person's share live, and one tap assigns whatever is left.
+- **Simplified debts:** every group works out the fewest payments that settle everyone. Record a payment with **Settle up**.
+- **Telegram:** people get a message when an expense or payment involving them is added, changed or deleted, with their new balance. The bot's **Open RTBSplitter** button opens the whole app inside Telegram, already signed in.
+- **Accounts:** an admin adds people, and there's no public sign-up. New people can join from a Telegram invite link, with no password needed.
+- **Any currency** per group (฿, €, £, ¥…), stored as whole cents so totals always add up exactly.
+- **Works on phones** and in dark mode. No ads, no tracking, and no dependencies at runtime.
+
+## Set it up
+
+> **Using Claude Code?** Open this folder in Claude Code and say *"help me set this up"*. [`CLAUDE.md`](CLAUDE.md) walks it through the steps below and tells it which ones you need to do yourself.
+
+There are three ways to run it:
+
+| | Best for | Cost | HTTPS |
+| --- | --- | --- | --- |
+| **[A. Cloudflare](#a-cloudflare-recommended)** (recommended) | Real use by a group | Free | Automatic |
+| **[B. Your computer](#b-on-your-computer)** | Trying it out, development | Free | No |
+| **[C. Your own Ubuntu server](#c-on-your-own-ubuntu-server)** | People who already run a server | Server cost | With a domain |
+
+**You'll need** [Node.js 22.13 or newer](https://nodejs.org), `git`, and for option A a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
+
+### A. Cloudflare (recommended)
+
+Takes about 10 minutes. Run every command in a normal terminal, inside the project folder.
+
+1. **Get the code**
+   ```sh
+   git clone https://github.com/mesjj/rtbsplitter.git
+   cd rtbsplitter
+   npm install
+   ```
+
+2. **Log in to Cloudflare.** This opens your browser; click **Allow**.
+   ```sh
+   npx wrangler login
+   ```
+
+3. **Create the database**
+   ```sh
+   npx wrangler d1 create rtbsplitter
+   ```
+   It prints a `database_id`. Keep it for the next step.
+
+4. **Point the project at *your* database.** Open `wrangler.jsonc` and change three values:
+   ```jsonc
+   "name": "rtbsplitter",                  // your app's name, which becomes part of its web address
+   ...
+   "database_name": "rtbsplitter",
+   "database_id": "paste-the-id-from-step-3"
+   ```
+   The values already in the file belong to the original author's copy. Replace them.
+
+5. **Create the tables**
+   ```sh
+   npx wrangler d1 execute rtbsplitter --remote --file lib/schema.sql
+   ```
+
+6. **Deploy**
+   ```sh
+   npm test && npx wrangler deploy
+   ```
+   On a brand-new Cloudflare account it asks you to pick a **workers.dev subdomain**; any name is fine. At the end it prints your app's address, like `https://rtbsplitter.<your-subdomain>.workers.dev`.
+
+7. **Choose the first admin's password**
+   ```sh
+   npx wrangler secret put ADMIN_PASSWORD
+   ```
+   Type a password when it asks. The first time the app is visited, it creates an account called `admin` with that password.
+
+8. **Open the address from step 6** and log in as `admin`. The first visit to a new workers.dev address can fail for a minute or two while Cloudflare issues its HTTPS certificate. Then:
+   - Change your password: your name (top right) → **Change password**.
+   - Set your display name: your name (top right) → **Change display name**.
+   - Add everyone: **Admin → Add person**.
+
+That's it. Optionally, set up Telegram next.
+
+### Telegram (optional)
+
+1. In Telegram, message **[@BotFather](https://t.me/BotFather)**, send `/newbot`, and follow the prompts. It gives you a **token** like `123456789:AA…`. Treat it like a password.
+2. Store the token in Cloudflare. **Run this in your own terminal**, then paste the token when it asks:
+   ```sh
+   npx wrangler secret put TELEGRAM_BOT_TOKEN
+   ```
+   Or use the Cloudflare dashboard: **Workers & Pages → your app → Settings → Variables and Secrets → Add**, with **Type: Secret**. Don't pick the default *Text*, because deploys remove plain-text variables.
+3. In the app, go to **Admin → Telegram notifications → Connect bot to this site**. This also adds the **Open RTBSplitter** button to the bot and sets its name. You can press **Set bot picture to the app icon** too.
+4. Get people connected, in either of two ways:
+   - **Existing users:** your name (top right) → **Telegram notifications** → **Open Telegram to connect**, then tap **Start**.
+   - **New people:** on **Admin**, add the person (the password can be left blank), then send them their **Telegram invite** link. They tap **Start**, and they're in. Admins on Telegram get a message when someone joins.
+
+### B. On your computer
 
 ```sh
-npm start                 # http://localhost:3000
+git clone https://github.com/mesjj/rtbsplitter.git
+cd rtbsplitter
+npm start
 ```
 
-On first start an `admin` account is created and its password is printed to the console
-(or set it yourself with `ADMIN_PASSWORD=... npm start`). Log in, go to **Admin → Add person**
-to create everyone's logins, and change your own password from the menu in the top right.
+Open http://localhost:3000. The first start creates an `admin` account and prints its password in the terminal; to choose it yourself, use `ADMIN_PASSWORD=something npm start`. Data is kept in `data/rtbsplitter.db`.
 
-| Env var          | Default              | What it does                                   |
-|------------------|----------------------|------------------------------------------------|
-| `PORT`           | `3000`               | HTTP port                                      |
-| `DB_FILE`        | `data/splitwise.db`  | SQLite database file (back this up)            |
-| `ADMIN_PASSWORD` | random               | Password for the bootstrap admin (first run)   |
-| `SECURE_COOKIES` | off                  | Set to `1` when serving over HTTPS             |
+For Telegram when running locally, start it with `TELEGRAM_BOT_TOKEN=… npm start`. Telegram can only reach a public HTTPS address, though, so the bot's replies and the Open button only work when deployed.
 
-Forgot the admin password? Stop the server and run
-`sqlite3 data/splitwise.db "UPDATE users SET is_admin=0"`. Then start it with
-`ADMIN_PASSWORD=newpass npm start`. Whenever no active admin exists, `admin` is recreated (or reset) with that password.
+### C. On your own Ubuntu server
 
-## Deploying to Cloudflare Workers
+`deploy/setup.sh` turns a fresh **Ubuntu 24.04** server into a host for the app:
 
-The same code runs as a Cloudflare Worker, with D1 (Cloudflare's SQLite) as the database. Pages, CSS and JS are served as static assets; only `/api/*` runs the Worker (`worker.js`, config in `wrangler.jsonc`).
-
-| Task | Command |
-| --- | --- |
-| Log in (once) | `npx wrangler login` |
-| Create the database (once) | `npx wrangler d1 create splitwise`, then put the printed `database_id` in `wrangler.jsonc` |
-| Create the tables (once; safe to re-run) | `npx wrangler d1 execute splitwise --remote --file lib/schema.sql` |
-| Copy data from a SQLite file (e.g. the VPS) | `node deploy/sqlite-to-d1.mjs splitwise.db > data.sql`, then `npx wrangler d1 execute splitwise --remote --file data.sql` |
-| First admin on an empty database | `npx wrangler secret put ADMIN_PASSWORD`; `admin` is created on the first request |
-| Deploy | `npm test && npx wrangler deploy` |
-| Try the Worker locally | `npx wrangler d1 execute splitwise --local --file lib/schema.sql`, then `npx wrangler dev` |
-| Logs | `npx wrangler tail` |
-| Back up the database | `npx wrangler d1 export splitwise --remote --output backup.sql` (D1 also keeps 30 days of point-in-time restore: `wrangler d1 time-travel`) |
-
-Passwords are hashed with PBKDF2 (Web Crypto). Hashes from the first version (scrypt) still work and are upgraded the first time each person logs in.
-
-## Self-hosting on your own server (Ubuntu 24.04)
-
-The app also runs as a plain Node server. `deploy/setup.sh` prepares a fresh Ubuntu 24.04 machine with:
-
-- **App:** a `splitwise` systemd service that runs as its own user and listens on `127.0.0.1:3000` only.
-- **Proxy:** Caddy in front on port 80, plus 443 with automatic HTTPS once a domain is set.
+- **App:** a `rtbsplitter` service that runs as its own user, listening only on `127.0.0.1:3000`.
+- **Proxy:** Caddy in front, with automatic HTTPS when you give it a domain.
 - **Firewall:** `ufw` allows only SSH, HTTP and HTTPS.
-- **Database:** `/var/lib/splitwise/splitwise.db`.
-- **Backups:** every night at 03:15 to `/var/backups/splitwise/`, kept for 14 days.
-
-| Task | Command |
-| --- | --- |
-| First-time setup | copy `deploy/setup.sh` to the server and run `bash setup.sh` as root (`DOMAIN=split.example.com bash setup.sh` for HTTPS) |
-| Ship code changes (runs tests, copies files, restarts) | `SERVER=root@your-server SSH_KEY=path/to/key deploy/deploy.sh` |
-| Logs | `ssh root@your-server journalctl -u splitwise -f` |
-| Restore a backup | `systemctl stop splitwise`, copy a backup over the database file, `chown splitwise:splitwise` it, `systemctl start splitwise` |
-
-Keep SSH keys out of the repository; `.ssh/` is git-ignored for that reason.
-
-## Features
-
-- **Logins.** Admins create accounts, and there's no public sign-up. Passwords are hashed with scrypt, sessions last 30 days, and failed logins are rate limited.
-- **Admin panel.** Add people, rename them, reset passwords, grant admin, and deactivate or reactivate accounts. A person can only be deleted if they have no history.
-- **Expenses.** Each expense has a description, total, date, payer and optional notes, and can be split four ways:
-  - *Equally* between whoever you tick
-  - *Exact amounts*, which must add up to the total
-  - *Percentages*, which must add up to 100%
-  - *Shares*, e.g. 2 : 1 : 1
-  The form shows each person's share live and tells you how much is left to assign.
-- **Balances.** Each group's overview shows your total, who you owe, who owes you, and bars for everyone's balance.
-- **Automatic rebalancing.** Debts are simplified into the fewest transfers that settle everyone, like Splitwise's "simplify debts".
-- **Settle up.** Record a payment between two people. The suggested amount is pre-filled.
-- **Edit or delete** expenses and payments. This is allowed for anyone involved and for admins.
-- **Groups.** You can have any number of groups, each with its own mix of members, a currency and separate balances. Groups last until someone deletes them; archiving one makes it read-only. Any member can create a group and manage the groups they're in; admins see and manage all groups. Members only see groups they belong to. People who leave a group but have history there stay on as past members. Any member can delete an empty group. Deleting a group that has expenses removes them too; only its creator or an admin can do that, and they must type the group's name to confirm. Home shows your balance in every group.
-- **Currency.** Each group has its own currency, and nothing is converted between groups. Currencies without decimals, such as JPY or KRW, only accept whole amounts.
-- **Upgrading.** If a database from before groups is found, all existing expenses and payments move into a "General" group automatically.
-- Month-grouped activity feed with an "involving me" filter, dark mode, and a mobile layout.
-
-Money is stored as integer cents. Uneven splits use largest-remainder rounding, so shares always add up
-to exactly the total.
-
-## Tests
+- **Backups:** every night at 03:15, kept for 14 days.
 
 ```sh
-npm test
+scp deploy/setup.sh root@your-server:
+ssh root@your-server 'DOMAIN=split.example.com bash setup.sh'   # leave out DOMAIN= for plain HTTP
+SERVER=root@your-server SSH_KEY=~/.ssh/id_ed25519 deploy/deploy.sh
 ```
 
-## Layout
+Then log in at your domain. The admin password is set the same way as in option B: `ADMIN_PASSWORD` on first start, or read it from `journalctl -u rtbsplitter`.
+
+## Keeping it running
+
+| Task | Command (Cloudflare) |
+| --- | --- |
+| Ship code changes | `git pull && npm test && npx wrangler deploy` |
+| After `lib/schema.sql` changes | `npx wrangler d1 execute rtbsplitter --remote --file lib/schema.sql` (only adds what's missing) |
+| Live logs | `npx wrangler tail` |
+| Back up the data | `npx wrangler d1 export rtbsplitter --remote --output backup.sql` (stays out of git) |
+| Undo a mistake | D1 keeps 30 days of history: `npx wrangler d1 time-travel restore rtbsplitter --timestamp=2026-09-01T12:00:00Z` |
+| Locked out of admin | `npx wrangler secret put ADMIN_PASSWORD`, then `npx wrangler d1 execute rtbsplitter --remote --command "UPDATE users SET is_admin = 0"`. With no admins left, the next visit recreates `admin` with that password; promote the others again from **Admin**. |
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| The site won't load right after the first deploy (`handshake failure`) | A new workers.dev address needs a few minutes for its certificate. Wait and retry. |
+| A secret "saved" but the app says Telegram isn't set up | It was saved empty. `wrangler secret put` has to run in a real terminal where it can prompt you; tools that run commands without a prompt store a blank value. Run it again in a terminal. |
+| The Telegram token vanished after a deploy | It was added as a **Text** variable. Re-add it as a **Secret**. |
+| The bot's **Open** button doesn't appear | Close and reopen the chat with the bot. Also check **Admin → Telegram notifications** shows ✅ for both items. |
+| Amounts show the wrong currency symbol | Each group has its own currency: open the group → ⚙️ → **Currency**. Changing it only changes the symbol; it never converts the amounts. |
+
+## Configuration
+
+| Setting | Where | Purpose |
+| --- | --- | --- |
+| `ADMIN_PASSWORD` | Cloudflare secret, or environment | Creates `admin` when no active admin exists |
+| `TELEGRAM_BOT_TOKEN` | Cloudflare secret, or environment | Turns on Telegram notifications and the Mini App |
+| `DB` binding | `wrangler.jsonc` | The D1 database |
+| `PORT`, `HOST`, `DB_FILE` | environment (Node only) | Where the Node server listens and stores data |
+| `TRUST_PROXY=1`, `SECURE_COOKIES=1` | environment (Node only) | Set these behind a reverse proxy with HTTPS |
+
+## How it's built
+
+No framework and no build step. The same API code runs on Cloudflare Workers (with D1) and on Node (with its built-in SQLite).
 
 ```
-server.js         entry point
-lib/money.js      split + debt-simplification math
-lib/db.js         schema
-lib/auth.js       passwords, sessions
-lib/app.js        HTTP API + static files
-public/           frontend (vanilla JS, no build step)
-old-prototype/    the earlier localStorage-only version
+worker.js              Cloudflare entry point (static files are served by Workers Assets)
+server.js              Node entry point
+lib/app.js             The JSON API: routes, rules, permissions
+lib/money.js           Splitting maths and "simplify debts" (all integer cents)
+lib/store.js           One async database interface over D1 and node:sqlite
+lib/schema.sql         Database tables
+lib/auth.js            Passwords (PBKDF2), sessions, login rate limiting
+lib/telegram.js        The bot: linking chats, Mini App sign-in, webhook
+lib/notify.js          The text of Telegram notifications
+public/                The web app (plain HTML, CSS and JavaScript)
+test/                  npm test: money maths, the API, Telegram flows
+deploy/                Ubuntu self-hosting scripts and a SQLite → D1 exporter
 ```
+
+Run the tests with `npm test`. To try the real Cloudflare runtime locally, run `npx wrangler d1 execute rtbsplitter --local --file lib/schema.sql`, then `npx wrangler dev`.

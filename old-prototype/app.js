@@ -1,6 +1,6 @@
-// Splitwise Lite — all money is handled in integer cents to avoid float drift.
+// RTBSplitter (first prototype) — all money is handled in integer cents to avoid float drift.
 
-const STORAGE_KEY = 'splitwise-lite/v1';
+const STORAGE_KEY = 'rtbsplitter/v1';
 
 let state = load();
 

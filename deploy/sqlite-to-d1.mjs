@@ -1,6 +1,6 @@
-// Export a Splitwise SQLite database (e.g. the VPS copy) as SQL INSERTs for Cloudflare D1.
-//   node deploy/sqlite-to-d1.mjs path/to/splitwise.db > data.sql
-//   npx wrangler d1 execute splitwise --remote --file data.sql
+// Export an RTBSplitter SQLite database (e.g. from a self-hosted server) as SQL INSERTs for Cloudflare D1.
+//   node deploy/sqlite-to-d1.mjs path/to/rtbsplitter.db > data.sql
+//   npx wrangler d1 execute <your D1 database name> --remote --file data.sql
 // Sessions and login failures are not copied: everyone simply logs in again.
 
 import { open } from '../lib/db.js'; // also upgrades older layouts before exporting

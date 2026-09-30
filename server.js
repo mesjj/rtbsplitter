@@ -2,6 +2,7 @@
 // (On Cloudflare, worker.js plays this role and public/ is served by Workers Assets.)
 
 import http from 'node:http';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { open } from './lib/db.js';
@@ -14,7 +15,9 @@ import fs from 'node:fs/promises';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || undefined; // e.g. 127.0.0.1 behind a reverse proxy; default = all interfaces
-const DB_FILE = process.env.DB_FILE || path.join(ROOT, 'data', 'splitwise.db');
+// data/rtbsplitter.db by default; installs from before the rename keep using data/splitwise.db.
+const LEGACY_DB = path.join(ROOT, 'data', 'splitwise.db');
+const DB_FILE = process.env.DB_FILE || (existsSync(LEGACY_DB) ? LEGACY_DB : path.join(ROOT, 'data', 'rtbsplitter.db'));
 
 const db = nodeStore(open(DB_FILE));
 const created = await ensureAdmin(db, { password: process.env.ADMIN_PASSWORD });
@@ -31,4 +34,4 @@ const api = createApp(db, {
   loadAsset: async p => new Uint8Array(await fs.readFile(path.join(ROOT, 'public', path.normalize(p).replace(/^(\.\.[/\\])+/, '')))),
 });
 http.createServer(nodeHandler(api, { publicDir: path.join(ROOT, 'public'), trustProxy: process.env.TRUST_PROXY === '1' }))
-  .listen(PORT, HOST, () => console.log(`Splitwise running at http://${HOST || 'localhost'}:${PORT}`));
+  .listen(PORT, HOST, () => console.log(`RTBSplitter running at http://${HOST || 'localhost'}:${PORT}`));

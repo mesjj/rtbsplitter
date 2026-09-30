@@ -26,6 +26,7 @@ function fakeTelegram() {
     if (method === 'getMe') return reply(200, { ok: true, result: { username: 'split_test_bot' } });
     if (method === 'setWebhook') return reply(200, { ok: true, result: true });
     if (method === 'setChatMenuButton') return reply(200, { ok: true, result: true });
+    if (method === 'setMyName') return reply(200, { ok: true, result: true });
     if (method === 'getChatMenuButton') return reply(200, { ok: true, result: calls.findLast(c => c.method === 'setChatMenuButton')?.body.menu_button || { type: 'commands' } });
     if (method === 'getWebhookInfo') return reply(200, { ok: true, result: { url: calls.findLast(c => c.method === 'setWebhook')?.body.url || '' } });
     if (method === 'sendMessage') {
@@ -82,7 +83,7 @@ test('telegram: connect, notify only involved people, before/after details, unli
   const code = url.match(/^https:\/\/t\.me\/split_test_bot\?start=([0-9a-f]{32})$/)[1];
   assert.equal((await webhook(111, `/start ${code}`, 'wrong-secret')).status, 401); // forged calls are rejected
   assert.equal((await webhook(111, `/start ${code}`)).status, 200);
-  assert.match(tg.take()[0].text, /Connected to Splitwise as <b>Ann<\/b>/);
+  assert.match(tg.take()[0].text, /Connected to RTBSplitter as <b>Ann<\/b>/);
   assert.equal((await A('GET', '/api/me/telegram')).body.tgName, '@user111');
   // The code can't be reused.
   await webhook(999, `/start ${code}`);
@@ -177,7 +178,8 @@ test('telegram: admin webhook setup and status; off when no token', async () => 
   assert.equal(status.webhookOk, true);
   assert.equal(status.menuButtonOk, true);
   assert.deepEqual(tg.calls.find(c => c.method === 'setChatMenuButton').body.menu_button,
-    { type: 'web_app', text: 'Open Splitwise', web_app: { url: 'https://split.test' } });
+    { type: 'web_app', text: 'Open RTBSplitter', web_app: { url: 'https://split.test' } });
+  assert.deepEqual(tg.calls.find(c => c.method === 'setMyName').body, { name: 'RTBSplitter' });
 
   // Bot picture: the app icon, uploaded as a JPG file.
   assert.equal((await admin('POST', '/api/admin/telegram/photo')).status, 200);
@@ -285,8 +287,8 @@ test('telegram invite: a new person activates from Telegram alone, no website or
   // Zoe taps Start in Telegram → connected, and the admin is told.
   await webhook(901, `/start ${invite.url.split('start=')[1]}`);
   const sent = tg.take();
-  assert.match(sent.find(m => m.chat === '901').text, /Connected to Splitwise as <b>Zoe<\/b>/);
-  assert.match(sent.find(m => m.chat === '700').text, /✅ <b>Zoe<\/b> \(@zoe\) just joined Splitwise through their Telegram invite/);
+  assert.match(sent.find(m => m.chat === '901').text, /Connected to RTBSplitter as <b>Zoe<\/b>/);
+  assert.match(sent.find(m => m.chat === '700').text, /✅ <b>Zoe<\/b> \(@zoe\) just joined RTBSplitter through their Telegram invite/);
   assert.equal(sent.length, 2);
   row = (await admin('GET', '/api/admin/users')).body.find(u => u.id === zoe);
   assert.equal(row.hasTelegram, true);

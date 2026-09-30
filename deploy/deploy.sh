@@ -19,7 +19,7 @@ rsync -az --delete -e "$SSH" \
   --include='/server.js' --include='/package.json' \
   --include='/lib/***' --include='/public/***' \
   --exclude='*' \
-  ./ "$SERVER:/opt/splitwise/"
+  ./ "$SERVER:/opt/rtbsplitter/"
 
 echo "==> Restarting"
-$SSH "$SERVER" 'systemctl restart splitwise && sleep 1 && systemctl is-active splitwise && curl -fsS -o /dev/null -w "local check: HTTP %{http_code}\n" http://127.0.0.1:3000/'
+$SSH "$SERVER" 'systemctl restart rtbsplitter && sleep 1 && systemctl is-active rtbsplitter && curl -fsS -o /dev/null -w "local check: HTTP %{http_code}\n" http://127.0.0.1:3000/'

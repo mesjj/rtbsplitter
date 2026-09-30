@@ -1,8 +1,8 @@
 {
-  "name": "splitwise-lite",
+  "name": "rtbsplitter",
   "version": "1.0.0",
   "private": true,
-  "description": "A small self-hosted Splitwise clone",
+  "description": "A small self-hosted bill-splitting app with Telegram notifications",
   "main": "server.js",
   "engines": {
     "node": ">=22.13"

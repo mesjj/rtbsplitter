@@ -236,6 +236,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
 
 /* ---------- dashboard ---------- */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 20px; }
+.stats-1 { grid-template-columns: 1fr; }
+.stats-2 { grid-template-columns: 1fr 1fr; }
 .stat { padding: 16px 18px; text-align: center; }
 .stat + .stat { border-left: 1px solid var(--line); }
 .stat .label { font-size: 13px; color: var(--muted); }

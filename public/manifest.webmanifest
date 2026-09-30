@@ -1,6 +1,6 @@
 {
-  "name": "Splitwise",
-  "short_name": "Splitwise",
+  "name": "RTBSplitter",
+  "short_name": "RTBSplitter",
   "start_url": "/#/home",
   "display": "standalone",
   "background_color": "#f3f5f4",

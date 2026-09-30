@@ -1,5 +1,5 @@
 'use strict';
-// Splitwise frontend. Vanilla JS, no build step. All money is integer cents.
+// RTBSplitter frontend. Vanilla JS, no build step. All money is integer cents.
 
 // Each group has its own currency. Amounts are never converted.
 // CURRENCY / UNIT / CURRENCY_SYMBOL follow the group being viewed or edited.
@@ -41,7 +41,7 @@ const prefs = (() => {
 function savePrefs() { try { localStorage.setItem('sw-prefs', JSON.stringify(prefs)); } catch {} }
 
 // --- Telegram Mini App ------------------------------------------------------------
-// Opened from the bot's "Open Splitwise" button, Telegram puts signed launch data in the
+// Opened from the bot's "Open RTBSplitter" button, Telegram puts signed launch data in the
 // URL fragment (#tgWebAppData=…). We keep it for signing in and load Telegram's script.
 const TG = (() => {
   let initData = '';
@@ -252,7 +252,7 @@ function renderLogin() {
   $('#app').replaceChildren(
     h('div', { class: 'login-wrap' },
       h('div', { class: 'login-card' },
-        h('div', { class: 'logo' }, logoMark(), 'Splitwise'),
+        h('div', { class: 'logo' }, logoMark(), 'RTBSplitter'),
         h('p', { class: 'muted' }, 'Split bills with your people.'),
         TG.inTelegram && h('p', { class: 'small tg-hint' }, 'Log in once here and this Telegram account will be connected — after that the app opens already signed in.'),
         form)));
@@ -326,7 +326,7 @@ function topbar() {
   }, avatar(me, 'sm'), h('span', { class: 'user-name' }, me.name), icon('chevron', 14));
 
   return h('header', { class: 'topbar' },
-    h('a', { href: '#/home', class: 'logo', style: 'text-decoration:none' }, logoMark(), 'Splitwise'),
+    h('a', { href: '#/home', class: 'logo', style: 'text-decoration:none' }, logoMark(), 'RTBSplitter'),
     h('div', { class: 'spacer' }),
     h('div', { class: 'user-menu' }, btn, menu));
 }
@@ -380,7 +380,7 @@ function renderHome(main) {
       h('button', { class: 'btn primary', onclick: () => openGroupModal() }, icon('plus', 16), 'New group'))));
 
   if (totals.size) {
-    main.append(h('div', { class: 'card stats', style: `grid-template-columns:repeat(${Math.min(totals.size, 3)}, 1fr)` },
+    main.append(h('div', { class: `card stats stats-${Math.min(totals.size, 3)}` },
       [...totals].map(([code, cents]) => h('div', { class: 'stat' },
         h('div', { class: 'label' }, totals.size > 1 ? `Your balance in ${code}` : 'Your balance, all groups'),
         h('div', { class: `value num ${cents > 0 ? 'owed' : cents < 0 ? 'owe' : ''}` }, money(cents, code)),
@@ -1137,11 +1137,11 @@ async function openInviteModal(u) {
     catch { linkBox.select(); toast('Select the link and copy it', true); }
   } }, 'Copy link');
   const share = navigator.share && h('button', { type: 'button', class: 'btn sm', onclick: () => {
-    navigator.share({ title: 'Splitwise', text: `Hi ${u.name}! Tap this to join our Splitwise on Telegram:`, url: invite.url }).catch(() => {});
+    navigator.share({ title: 'RTBSplitter', text: `Hi ${u.name}! Tap this to join our RTBSplitter on Telegram:`, url: invite.url }).catch(() => {});
   } }, 'Share…');
   openModal(`Telegram invite for ${u.name}`, [
     h('p', { style: 'margin-top:0' }, `Send ${u.name} this link. When they open it and tap `, h('b', {}, 'Start'),
-      ', their Telegram is connected to this account — they’ll get notifications, and ', h('b', {}, 'Open Splitwise'),
+      ', their Telegram is connected to this account — they’ll get notifications, and ', h('b', {}, 'Open RTBSplitter'),
       ' in the bot signs them straight in. No website or password needed.'),
     linkBox,
     h('div', { class: 'detail-actions', style: 'margin-top:10px' }, copy, share),
